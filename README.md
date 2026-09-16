@@ -1,24 +1,35 @@
-# Modern Campus Catalog (Acalog) PDF Scraper
+# Modern Campus Catalog Exporter
 
-A vanilla JavaScript browser script to extract and combine every course page from a Modern Campus Catalog (formerly Acalog) into a single, clean, searchable PDF.
+A browser userscript that exports every course from Washington and Lee's Modern Campus Catalog (formerly Acalog) into deterministic, LLM-friendly artifacts. Authentication and anti-bot state stay inside the user's normal browser session.
 
-Many universities use Acalog for their course catalogs but do not provide an easy way to download the entire expanded course list at once. This script automates the process by fetching every page in the background, stripping out the repetitive UI elements, and stitching the raw course data together on a clean white background so you can print it to PDF.
+The exporter discovers the catalog's real page count, fetches every page with bounded backoff, and refuses to save a partial result. It parses each course into stable fields and can restrict the output to selected department prefixes.
 
 ## Features
-* **Zero Setup:** Runs entirely in your browser console. No Python, no dependencies, no API keys.
-* **Auto-Detects Limits:** Automatically detects the last page of the catalog and stops scraping.
-* **Preserves Formatting:** Keeps course titles, credits, and descriptions cleanly formatted.
-* **Searchable:** The resulting PDF is fully text-searchable.
+* **Structured output:** full Markdown and JSON snapshots with code, title, prerequisites, corequisites, FDR, credits, and description.
+* **Per-department archive:** a tar archive containing `_INDEX.md` and one Markdown file per prefix, including rough token estimates.
+* **Mechanical change detection:** after the first run, each export includes a compact JSON diff against the browser's previous snapshot.
+* **Completeness evidence:** output records expected and fetched page counts, source URL, catalog identifiers, capture time, and stable course fingerprints.
+* **Fail-closed collection:** a missing, empty, or persistently throttled page produces no artifacts.
+* **No credentials:** the script uses same-origin browser requests and never copies cookies or creates tokens.
 
 ## How to Use
 
-1. Navigate to your university's Acalog course search page. 
-2. Ensure you have the view expanded (look for `print=1` and `expand=1` in your URL). A typical URL looks like this:
-   `https://catalog.[school].edu/content.php?...&expand=1&print=1`
-3. Press `F12` to open Developer Tools and go to the **Console** tab.
-4. Paste the script from `scraper.js` into the console and press Enter.
-5. Wait for the script to fetch all pages. The screen will say "Done!" when finished.
-6. Press `Ctrl + P` (or `Cmd + P` on Mac) and select **Save as PDF**.
+1. Install `dist/acalog-catalog-export.user.js` in a userscript manager.
+2. Open the catalog's Courses page in the normal browser session.
+3. Click **Export catalog**. Enter comma-separated department prefixes such as `CSCI,MATH`, or leave the field empty for the full catalog.
+4. Keep the page open until the green status banner reports all pages fetched. The browser downloads JSON, Markdown, and a per-department tar archive. A diff also downloads when a previous snapshot exists.
+
+Chrome may ask whether the catalog site can download multiple files. Allow it only for this site if you want all artifacts.
 
 ## How it Works
-The script grabs the current URL and iterates through the `filter[cpage]` parameter. It uses `fetch()` to grab the HTML of each subsequent page, parses it using `DOMParser`, extracts the core course table (`td.block_content`), and appends it to your current view. It stops automatically when a fetched page matches the previous page or returns empty.
+`src/catalog-core.js` owns deterministic parsing, rendering, fingerprints, and diffs. `src/browser.js` owns same-origin collection and downloads. `npm run build` creates the installable userscript. `npm test` runs parser, filtering, diff, department-output, and syntax checks without network access.
+
+The older `catalog_grabber_v2.js` and `screaper code.js` remain as historical standalone console scripts. New work belongs in `src/` and the generated `dist/` file.
+
+## Development
+
+```bash
+npm run build
+npm test
+npm run check
+```

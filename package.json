@@ -1,0 +1,10 @@
+{
+  "name": "acalog-catalog-scraper",
+  "version": "3.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "node tests/catalog-core.test.js && node --check dist/acalog-catalog-export.user.js",
+    "check": "npm run build && npm test && git diff --exit-code -- dist/acalog-catalog-export.user.js"
+  }
+}
